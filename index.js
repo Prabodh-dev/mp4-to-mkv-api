@@ -7,6 +7,9 @@ const path = require('path');
 const app = express();
 const PORT = 3000;
 
+// Serve static files from the 'frontend' directory
+app.use(express.static(path.join(__dirname, 'frontend')));
+
 // Ensure 'converted' folder exists
 if (!fs.existsSync('converted')) {
   fs.mkdirSync('converted');
@@ -18,7 +21,9 @@ const upload = multer({ dest: 'uploads/' });
 // Route to convert and download video
 app.post('/convert', upload.single('video'), (req, res) => {
   const inputPath = req.file.path;
-  const outputFileName = `${req.file.filename}.mkv`;
+  const originalName = req.file.originalname;
+  const baseName = path.parse(originalName).name;
+  const outputFileName = `${baseName}.mkv`;
   const outputPath = path.join(__dirname, 'converted', outputFileName);
 
   ffmpeg(inputPath)

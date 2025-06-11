@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MP4 to MKV Converter</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 40px; }
+    .container { background: #fff; padding: 30px; border-radius: 8px; max-width: 400px; margin: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h2 { text-align: center; }
+    input[type="file"] { display: block; margin: 20px auto; }
+    button { display: block; width: 100%; padding: 10px; background: #007bff; color: #fff; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+    button:disabled { background: #aaa; }
+    .status { text-align: center; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>MP4 to MKV Converter</h2>
+    <form id="convertForm">
+      <input type="file" id="videoInput" name="video" accept="video/mp4" required />
+      <button type="submit">Convert to MKV</button>
+    </form>
+    <div class="status" id="status"></div>
+  </div>
+  <script>
+    const form = document.getElementById('convertForm');
+    const statusDiv = document.getElementById('status');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusDiv.textContent = '';
+      const fileInput = document.getElementById('videoInput');
+      if (!fileInput.files.length) {
+        statusDiv.textContent = 'Please select an MP4 file.';
+        return;
+      }
+      const file = fileInput.files[0];
+      if (file.type !== 'video/mp4') {
+        statusDiv.textContent = 'Only MP4 files are allowed.';
+        return;
+      }
+      const formData = new FormData();
+      formData.append('video', file);
+      statusDiv.textContent = 'Uploading and converting...';
+      try {
+        const response = await fetch('/convert', {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) {
+          throw new Error('Conversion failed.');
+        }
+        const blob = await response.blob();
+        // Try to get filename from Content-Disposition header
+        let filename = 'converted.mkv';
+        const disposition = response.headers.get('Content-Disposition');
+        if (disposition && disposition.indexOf('filename=') !== -1) {
+          filename = disposition.split('filename=')[1].replace(/"/g, '');
+        }
+        // Create a link and trigger download
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        statusDiv.textContent = 'Download should start automatically.';
+      } catch (err) {
+        statusDiv.textContent = err.message || 'An error occurred.';
+      }
+    });
+  </script>
+</body>
+</html> 
